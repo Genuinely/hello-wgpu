@@ -35,8 +35,8 @@ fn vs_color(
     let y = f32(i32(idx & 1u) * 2 - 1) * 0.5;
     out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
 
-    let pos = out.clip_position.xyz;
-    out.v_color = (pos * 0.5) + vec3<f32>(0.5);
+    let pos = out.clip_position.xyz; // pos is [-1, 1] so need to normalize
+    out.v_color = (pos * 0.5) + vec3<f32>(0.5); 
     return out;
 }
 

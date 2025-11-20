@@ -1,3 +1,6 @@
+// Next steps: add explicit vertex buffer and index buffer
+
+
 use std::{iter, sync::Arc};
 
 use wgpu::VertexState;
@@ -428,11 +431,12 @@ pub fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(start)]
-pub fn run_web() -> Result<(), wasm_bindgen::JsValue> {
-    console_error_panic_hook::set_once();
-    run().unwrap_throw();
+// // compiling to run on web with wasm
+// #[cfg(target_arch = "wasm32")]
+// #[wasm_bindgen(start)]
+// pub fn run_web() -> Result<(), wasm_bindgen::JsValue> {
+//     console_error_panic_hook::set_once();
+//     run().unwrap_throw();
 
-    Ok(())
-}
+//     Ok(())
+// }
