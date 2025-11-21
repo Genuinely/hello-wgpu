@@ -2,8 +2,7 @@
 
 
 use std::{iter, sync::Arc};
-
-use wgpu::VertexState;
+use wgpu::{VertexState, util::{BufferInitDescriptor, DeviceExt}};
 use winit::{
     application::ApplicationHandler,
     event::*,
@@ -11,9 +10,25 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::Window,
 };
+use bytemuck;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+// #[cfg(target_arch = "wasm32")]
+// use wasm_bindgen::prelude::*;
+
+// C-style memory layout to guarantee contigious buffer
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    position: [f32; 3], // xyz
+    color: [f32; 3] // rgb
+}
+
+// any triangle facing us is ccw order to cull the back
+const VERTICES: &[Vertex] = &[
+    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
+    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
+    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+];
 
 pub struct State {
     surface: wgpu::Surface<'static>,
@@ -28,6 +43,7 @@ pub struct State {
     challenge_pipeline: wgpu::RenderPipeline,
     clear_color: wgpu::Color,
     use_challenge_pipeline: bool,
+    vertexbuffer: wgpu::Buffer
 }
 
 impl State {
@@ -96,6 +112,15 @@ impl State {
             desired_maximum_frame_latency: 2,
             view_formats: vec![],
         };
+        
+        // VERTEX BUFFER
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex buffer"),
+                contents: bytemuck::cast_slice(VERTICES), // one slice is one vertex's worth of memory
+                usage: wgpu::BufferUsages::VERTEX
+            }
+        );
 
         // RENDER PASS
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl")); // read the shader file
@@ -201,7 +226,8 @@ impl State {
             render_pipeline: render_pipeline,
             challenge_pipeline: challenge_render_pipeline,
             clear_color: wgpu::Color::BLACK,
-            use_challenge_pipeline: false
+            use_challenge_pipeline: false,
+            vertexbuffer: vertex_buffer
         })
     }
 
