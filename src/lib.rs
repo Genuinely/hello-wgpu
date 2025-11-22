@@ -2,7 +2,7 @@
 
 
 use std::{iter, sync::Arc};
-use wgpu::{VertexState, util::{BufferInitDescriptor, DeviceExt}};
+use wgpu::util::DeviceExt; // TODO: move all wgpu imports
 use winit::{
     application::ApplicationHandler,
     event::*,
@@ -382,20 +382,20 @@ impl ApplicationHandler<State> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         #[allow(unused_mut)]
         let mut window_attributes = Window::default_attributes();
+        // WASM
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     use wasm_bindgen::JsCast;
+        //     use winit::platform::web::WindowAttributesExtWebSys;
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            use wasm_bindgen::JsCast;
-            use winit::platform::web::WindowAttributesExtWebSys;
+        //     const CANVAS_ID: &str = "canvas";
 
-            const CANVAS_ID: &str = "canvas";
-
-            let window = wgpu::web_sys::window().unwrap_throw();
-            let document = window.document().unwrap_throw();
-            let canvas = document.get_element_by_id(CANVAS_ID).unwrap_throw();
-            let html_canvas_element = canvas.unchecked_into();
-            window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
-        }
+        //     let window = wgpu::web_sys::window().unwrap_throw();
+        //     let document = window.document().unwrap_throw();
+        //     let canvas = document.get_element_by_id(CANVAS_ID).unwrap_throw();
+        //     let html_canvas_element = canvas.unchecked_into();
+        //     window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
+        // }
 
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
 
@@ -406,20 +406,21 @@ impl ApplicationHandler<State> for App {
             self.state = Some(pollster::block_on(State::new(window)).unwrap());
         }
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            if let Some(proxy) = self.proxy.take() {
-                wasm_bindgen_futures::spawn_local(async move {
-                    assert!(proxy
-                        .send_event(
-                            State::new(window)
-                                .await
-                                .expect("Unable to create canvas!!!")
-                        )
-                        .is_ok())
-                });
-            }
-        }
+        // wasm
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     if let Some(proxy) = self.proxy.take() {
+        //         wasm_bindgen_futures::spawn_local(async move {
+        //             assert!(proxy
+        //                 .send_event(
+        //                     State::new(window)
+        //                         .await
+        //                         .expect("Unable to create canvas!!!")
+        //                 )
+        //                 .is_ok())
+        //         });
+        //     }
+        // }
     }
 
     #[allow(unused_mut)]
@@ -491,10 +492,11 @@ pub fn run() -> anyhow::Result<()> {
     {
         env_logger::init();
     }
-    #[cfg(target_arch = "wasm32")]
-    {
-        console_log::init_with_level(log::Level::Info).unwrap_throw();
-    }
+    // wasm again
+    // #[cfg(target_arch = "wasm32")]
+    // {
+    //     console_log::init_with_level(log::Level::Info).unwrap_throw();
+    // }
 
     let event_loop = EventLoop::with_user_event().build()?;
     let mut app = App::new(
@@ -506,7 +508,7 @@ pub fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-// // compiling to run on web with wasm
+// // compiling to run on web with wasm, worry about this later
 // #[cfg(target_arch = "wasm32")]
 // #[wasm_bindgen(start)]
 // pub fn run_web() -> Result<(), wasm_bindgen::JsValue> {
