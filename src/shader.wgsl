@@ -1,4 +1,9 @@
 // Vertex shader
+struct CameraUniform {
+    view_proj: mat4x4<f32>,
+};
+@group(1) @binding(0) // 1.
+var<uniform> camera: CameraUniform;
 
 // define vertex input
 struct VertexInput {
@@ -25,6 +30,8 @@ fn vs_main(
     let pos =  vec4<f32>(model.position, 1.0); // 1.0 = no projection
     out.clip_position = pos;
     out.tex_coords = model.tex_coords;
+    out.clip_position = camera.view_proj * vec4<f32>(model.position, 1.0); // clipping with camera
+    // make sure KP not PK
     return out;
 }
 

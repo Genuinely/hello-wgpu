@@ -43,8 +43,10 @@ impl Texture {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST, // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-            // COPY_DST means that we want to copy data to this texture
+                // TEXTURE_BINDING tells
+                // gpu that we want to use this texture in shaders
+                // COPY_DST means that we want to copy data to this texture
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST, 
                 view_formats: &[],
             }
         );
