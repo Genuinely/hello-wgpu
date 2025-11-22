@@ -23,6 +23,29 @@ pub struct Vertex {
     color: [f32; 3] // rgb
 }
 
+impl Vertex {
+    // a description of how memory is laid out for the render pass
+    // TODO: use a macro to make this less verbose
+    fn desc() -> wgpu::VertexBufferLayout<'static> { // use 'static for ref. in a static
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress, // cast for u64
+            step_mode: wgpu::VertexStepMode::Vertex,
+            // this is just a 1:1 mapping btwn vertex struct and memory
+            attributes: &[
+                    wgpu::VertexAttribute {
+                        offset: 0,
+                        shader_location: 0,
+                        format: wgpu::VertexFormat::Float32x3,
+                    },
+                    wgpu::VertexAttribute {
+                        offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                        shader_location: 1,
+                        format: wgpu::VertexFormat::Float32x3,
+                    }
+                ]
+            }
+        }
+}
 // any triangle facing us is ccw order to cull the back
 const VERTICES: &[Vertex] = &[
     Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
@@ -43,7 +66,8 @@ pub struct State {
     challenge_pipeline: wgpu::RenderPipeline,
     clear_color: wgpu::Color,
     use_challenge_pipeline: bool,
-    vertexbuffer: wgpu::Buffer
+    vertexbuffer: wgpu::Buffer,
+    num_vertices: u32
 }
 
 impl State {
@@ -60,6 +84,7 @@ impl State {
             ..Default::default()
         });
 
+        let num_vertices = VERTICES.len() as u32; 
         // this is just an image buffer
         let surface = instance.create_surface(window.clone()).unwrap();
 
@@ -138,7 +163,7 @@ impl State {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_main"),
-                    buffers: &[],
+                    buffers: &[Vertex::desc()],
                     compilation_options: wgpu::PipelineCompilationOptions::default()
                 },
                 fragment: Some(wgpu::FragmentState { // 3.
@@ -180,7 +205,7 @@ impl State {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_color"),
-                    buffers: &[],
+                    buffers: &[Vertex::desc()],
                     compilation_options: wgpu::PipelineCompilationOptions::default()
                 },
                 fragment: Some(wgpu::FragmentState { // 3.
@@ -227,6 +252,7 @@ impl State {
             challenge_pipeline: challenge_render_pipeline,
             clear_color: wgpu::Color::BLACK,
             use_challenge_pipeline: false,
+            num_vertices: num_vertices,
             vertexbuffer: vertex_buffer
         })
     }
@@ -286,7 +312,8 @@ impl State {
                 render_pass.set_pipeline(&self.challenge_pipeline);
             }
             
-            render_pass.draw(0..3, 0..1); // 3.
+            render_pass.set_vertex_buffer(0, self.vertexbuffer.slice(..));
+            render_pass.draw(0..self.num_vertices, 0..1); // draw all vertices
         }
 
         self.queue.submit(iter::once(encoder.finish()));
