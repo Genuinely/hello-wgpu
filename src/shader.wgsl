@@ -23,14 +23,14 @@ fn vs_main(
     var out: VertexOutput;
     let pos =  vec4<f32>(model.position, 1.0); // 1.0 = no projection
     out.clip_position = pos;
-    out.color = vec3<f32>(0.0);
+    out.color = model.color;
     return out;
 }
 
 // change fragment to use color
 @fragment
-fn fs_main(_in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.3, 0.2, 0.1, 1.0);
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+     return vec4<f32>(in.color, 1.0);
 }
 
 // -------- Pipeline B (position-colored) --------

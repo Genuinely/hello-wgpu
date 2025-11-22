@@ -48,9 +48,18 @@ impl Vertex {
 }
 // any triangle facing us is ccw order to cull the back
 const VERTICES: &[Vertex] = &[
-    Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+    Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+    Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+    Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+    Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+];
+
+// indices so we only need to define **unique** vertices
+const INDICES: &[u16] = &[
+    0, 1, 4,
+    1, 2, 4,
+    2, 3, 4 
 ];
 
 pub struct State {
@@ -60,14 +69,15 @@ pub struct State {
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
     window: Arc<Window>,
-    // mouse_x: f32,
-    // mouse_y: f32,
+    // rendering
     render_pipeline: wgpu::RenderPipeline,
     challenge_pipeline: wgpu::RenderPipeline,
     clear_color: wgpu::Color,
     use_challenge_pipeline: bool,
-    vertexbuffer: wgpu::Buffer,
-    num_vertices: u32
+    // vertex and indices buffers
+    vertex_buffer: wgpu::Buffer,
+    indices_buffer: wgpu::Buffer,
+    num_indices: u32
 }
 
 impl State {
@@ -84,7 +94,7 @@ impl State {
             ..Default::default()
         });
 
-        let num_vertices = VERTICES.len() as u32; 
+        let num_indices = INDICES.len() as u32; 
         // this is just an image buffer
         let surface = instance.create_surface(window.clone()).unwrap();
 
@@ -138,12 +148,20 @@ impl State {
             view_formats: vec![],
         };
         
-        // VERTEX BUFFER
+        // VERTEX + INDICES BUFFERS
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex buffer"),
                 contents: bytemuck::cast_slice(VERTICES), // one slice is one vertex's worth of memory
                 usage: wgpu::BufferUsages::VERTEX
+            }
+        );
+
+        let indices_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index buffer"),
+                contents: bytemuck::cast_slice(INDICES), // one slice is one vertex's worth of memory
+                usage: wgpu::BufferUsages::INDEX
             }
         );
 
@@ -252,8 +270,9 @@ impl State {
             challenge_pipeline: challenge_render_pipeline,
             clear_color: wgpu::Color::BLACK,
             use_challenge_pipeline: false,
-            num_vertices: num_vertices,
-            vertexbuffer: vertex_buffer
+            num_indices: num_indices,
+            vertex_buffer: vertex_buffer,
+            indices_buffer: indices_buffer
         })
     }
 
@@ -311,9 +330,12 @@ impl State {
             } else {
                 render_pass.set_pipeline(&self.challenge_pipeline);
             }
-            
-            render_pass.set_vertex_buffer(0, self.vertexbuffer.slice(..));
-            render_pass.draw(0..self.num_vertices, 0..1); // draw all vertices
+            // GPU rendering is stateless per frame
+            // can have multiple vertex buffers (i.e. one for static stuff and another for position and dynamic stuff)
+            // can only have one index buffer for each draw, but can change later for another draw pass
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));            
+            render_pass.set_index_buffer(self.indices_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // draw all vertices
         }
 
         self.queue.submit(iter::once(encoder.finish()));
